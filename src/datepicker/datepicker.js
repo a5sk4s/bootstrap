@@ -262,7 +262,7 @@ angular.module('ui.bootstrap.datepicker', ['ui.bootstrap.dateparser', 'ui.bootst
           var thursdayIndex = (4 + 7 - ctrl.startingDay) % 7,
               curWeek = 0,
               numWeeks = scope.rows.length;
-          while( curWeek < numWeeks ) {scope.weekNumbers.push(getISO8601WeekNumber( scope.rows[curWeek++][thursdayIndex].date ))}
+          while( curWeek < numWeeks ) {scope.weekNumbers.push(getISO8601WeekNumber( scope.rows[curWeek++][thursdayIndex].date ));}
         }
       };
 
