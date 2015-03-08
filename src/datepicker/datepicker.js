@@ -30,7 +30,7 @@ angular.module('ui.bootstrap.datepicker', ['ui.bootstrap.dateparser', 'ui.bootst
     self[key] = angular.isDefined($attrs[key]) ? (index < 8 ? $interpolate($attrs[key])($scope.$parent) : $scope.$parent.$eval($attrs[key])) : datepickerConfig[key];
   });
 
-  // Watchable attributes
+  // Watchable date attributes
   angular.forEach(['minDate', 'maxDate'], function( key ) {
     if ( $attrs[key] ) {
       $scope.$parent.$watch($parse($attrs[key]), function(value) {
@@ -478,12 +478,24 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
         });
       }
 
-      angular.forEach(['minDate', 'maxDate'], function( key ) {
+      scope.watchData = {};
+      angular.forEach(['minDate', 'maxDate', 'datepickerMode'], function( key ) {
         if ( attrs[key] ) {
-          scope.$parent.$watch($parse(attrs[key]), function(value){
-            scope[key] = value;
+          var getAttribute = $parse(attrs[key]);
+          scope.$parent.$watch(getAttribute, function(value){
+            scope.watchData[key] = value;
           });
-          datepickerEl.attr(cameltoDash(key), key);
+          datepickerEl.attr(cameltoDash(key), 'watchData.' + key);
+
+          // Propagate changes from datepicker to outside
+          if ( key === 'datepickerMode' ) {
+            var setAttribute = getAttribute.assign;
+            scope.$watch('watchData.' + key, function(value, oldvalue) {
+              if ( value !== oldvalue ) {
+                setAttribute(scope.$parent, value);
+              }
+            });
+          }
         }
       });
       if (attrs.dateDisabled) {
@@ -513,6 +525,10 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
       }
       ngModel.$parsers.unshift(parseDate);
 
+      ngModel.$formatters.push(function (value) {
+         return ngModel.$isEmpty(value) ? value : dateFilter(value, dateFormat);
+      });
+
       // Inner change
       scope.dateSelection = function(dt) {
         if (angular.isDefined(dt)) {
@@ -533,9 +549,9 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
         });
       });
 
-      // Outter change
+      // Outer change
       ngModel.$render = function() {
-        var date = ngModel.$viewValue ? dateFilter(ngModel.$viewValue, dateFormat) : '';
+        var date = ngModel.$viewValue ? dateFilter(parseDate(ngModel.$viewValue), dateFormat) : '';
         element.val(date);
         scope.date = parseDate( ngModel.$modelValue );
       };
@@ -594,6 +610,9 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
       };
 
       var $popup = $compile(popupEl)(scope);
+      // Prevent jQuery cache memory leak (template is now redundant after linking)
+      popupEl.remove();
+
       if ( appendToBody ) {
         $document.find('body').append($popup);
       } else {
