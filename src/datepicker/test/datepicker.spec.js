@@ -1748,7 +1748,7 @@ describe('datepicker directive', function () {
       });
     });
 
-    ddescribe('first week in january', function() {
+    describe('first week in january', function() {
       beforeEach(inject(function() {
       }));
 
